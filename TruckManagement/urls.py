@@ -18,9 +18,11 @@ Including another URLconf
 from django.urls import path
 import core.views as views
 urlpatterns = [
-    #    path('admin/', admin.site.urls),
+        #path('admin/', admin.site.urls),
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('sample_data', views.sample_data),
 
     path('home/', views.home, name='home'),
+    path('add-truck/', views.add_truck, name='add_truck'),
+    path('trucks/', views.truck_list, name='truck_list'),
 ]
