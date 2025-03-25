@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista Produktów</title>
+</head>
+<body>
+    <h2>Lista Produktów</h2>
+    <table border="1">
+        <tr>
+            <th>Nazwa</th>
+            <th>Objętość</th>
+            <th>Priorytet</th>
+            <th>Obecny Hub</th>
+            <th>Docelowy Hub</th>
+            <th>Deadline</th>
+            <th>Kombinacje tras</th>
+        </tr>
+        {% for product in products %}
+        <tr>
+            <td>{{ product.name }}</td>
+            <td>{{ product.volume }}</td>
+            <td>{{ product.priority }}</td>
+            <td>{{ product.current_hub.name }}</td>
+            <td>{{ product.destination_hub.name }}</td>
+            <td>{{ product.deadline }}</td>
+            <td>
+                {% for route in product.get_combinations %}
+                    {{ route }}<br>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    <a href="/add_product">Dodaj Produkt</a> |
+    <a href="/add_hub">Dodaj Hub</a>
+</body>
+</html>
