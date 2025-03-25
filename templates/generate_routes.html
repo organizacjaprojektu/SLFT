@@ -1,0 +1,22 @@
+<!-- generate_routes.html -->
+
+{% block content %}
+  <h1>Generowanie nowych tras</h1>
+  <form method="post" action="{% url 'generate_routes' %}">
+    {% csrf_token %}
+    <button type="submit">Generuj nowe trasy</button>
+  </form>
+
+  {% if routes %}
+    <h2>Wygenerowane trasy:</h2>
+    <ul>
+      {% for route in routes %}
+        <li>
+          <strong>Zamówienia:</strong> {{ route.order_ids }} <br>
+          <strong>Trasa:</strong> {{ route.common_segment }} <br>
+          <strong>Łączny wolumen:</strong> {{ route.total_volume }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}

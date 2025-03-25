@@ -1,0 +1,29 @@
+
+{% block content %}
+  <h1>Dodaj nową ciężarówkę</h1>
+
+  {% if messages %}
+    <ul>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div>
+      <label for="name">Nazwa ciężarówki:</label>
+      <input type="text" id="name" name="name" required>
+    </div>
+
+    <div>
+      <label for="trailer_volume">Pojemność naczepy:</label>
+      <input type="number" id="trailer_volume" name="trailer_volume" required>
+    </div>
+
+    <button type="submit">Dodaj ciężarówkę</button>
+  </form>
+
+  <a href="{% url 'manage_hub_lorries' 1 %}">Zarządzaj ciężarówkami w hubie</a>
+{% endblock %}
