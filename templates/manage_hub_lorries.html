@@ -1,0 +1,36 @@
+
+{% block content %}
+  <h1>Zarządzanie ciężarówkami w hubie: {{ hub.name }}</h1>
+
+  <h2>Dodaj ciężarówkę do hubu</h2>
+  <form method="post" action="{% url 'add_lorry_to_hub' hub.id %}">
+    {% csrf_token %}
+    <div>
+      <label for="lorry">Wybierz ciężarówkę:</label>
+      <select id="lorry" name="lorry_id">
+        {% for lorry in available_lorries %}
+          <option value="{{ lorry.id }}">{{ lorry.brand }} (Pojemność: {{ lorry.capacity }})</option>
+        {% empty %}
+          <option disabled>Brak dostępnych ciężarówek</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit">Dodaj ciężarówkę</button>
+  </form>
+
+  <h2>Usuń ciężarówkę z hubu</h2>
+  <form method="post" action="{% url 'remove_lorry_from_hub' hub.id %}">
+    {% csrf_token %}
+    <div>
+      <label for="lorry_remove">Wybierz ciężarówkę do usunięcia:</label>
+      <select id="lorry_remove" name="lorry_id">
+        {% for lorry in assigned_lorries %}
+          <option value="{{ lorry.id }}">{{ lorry.name }} (Pojemność: {{ lorry.trailer_volume }})</option>
+        {% empty %}
+          <option disabled>Brak przypisanych ciężarówek</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit">Usuń ciężarówkę</button>
+  </form>
+{% endblock %}
