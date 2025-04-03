@@ -21,6 +21,9 @@ from core.views import product_form, hub_form, product_list, generate_routes_vie
 from core.views import manage_hub_lorries, add_lorry_to_hub, remove_lorry_from_hub, add_lorry
 
 urlpatterns = [
+        #path('admin/', admin.site.urls),
+    path('login/', views.CustomLoginView.as_view(), name='login'),
+    path('sample_data', views.sample_data),
     #    path('admin/', admin.site.urls),
     # path('login/', views.CustomLoginView.as_view(), name='login'),
     # path('sample_data', views.sample_data),
@@ -34,4 +37,6 @@ urlpatterns = [
     path('hubs/<int:hub_id>/add-lorry/', add_lorry_to_hub, name='add_lorry_to_hub'),
     path('hubs/<int:hub_id>/remove-lorry/', remove_lorry_from_hub, name='remove_lorry_from_hub'),
     path('add_lorry/', add_lorry, name='add_lorry'),
+    path('add-truck/', views.add_truck, name='add_truck'),
+    path('trucks/', views.truck_list, name='truck_list'),
 ]

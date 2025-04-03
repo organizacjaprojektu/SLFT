@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Lista Ciężarówek{% endblock %}
+
+{% block content %}
+  <h2>Lista ciężarówek</h2>
+  <ul>
+    {% for truck in trucks %}
+      <li>{{ truck.model }} - {{ truck.license_plate }} ({{ truck.capacity }} t)</li>
+    {% empty %}
+      <li>Brak dostępnych ciężarówek.</li>
+    {% endfor %}
+  </ul>
+  <a href="{% url 'add_truck' %}">Dodaj nową ciężarówkę</a>
+{% endblock %}
