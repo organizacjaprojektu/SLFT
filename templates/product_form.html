@@ -1,46 +1,33 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dodaj Produkt</title>
-</head>
-<body>
-    <h2>Dodaj Produkt</h2>
-    <form method="post">
-        {% csrf_token %}
-        <label for="name">Nazwa:</label>
-        <input type="text" id="name" name="name" required><br><br>
-
-        <label for="volume">Objętość:</label>
-        <input type="number" id="volume" name="volume" required><br><br>
-
-        <label for="priority">Priorytet:</label>
-        <select id="priority" name="priority">
-            <option value="1">Tani transport</option>
-            <option value="2">Zrównoważony</option>
-            <option value="3">Szybka dostawa</option>
-        </select><br><br>
-
-        <label for="current_hub">Obecny hub:</label>
-        <select id="current_hub" name="current_hub">
-            {% for hub in hubs %}
-                <option value="{{ hub.id }}">{{ hub.name }}</option>
-            {% endfor %}
-        </select><br><br>
-
-        <label for="destination_hub">Docelowy hub:</label>
-        <select id="destination_hub" name="destination_hub">
-            {% for hub in hubs %}
-                <option value="{{ hub.id }}">{{ hub.name }}</option>
-            {% endfor %}
-        </select><br><br>
-
-        <label for="start_time">Data nadania:</label>
-        <input type="datetime-local" id="start_time" name="start_time" required><br><br>
-
-        <button type="submit">Dodaj Produkt</button>
-    </form>
-    <a href="/products">Powrót do listy produktów</a>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Dodaj Produkt{% endblock %}
+{% block content %}
+<h2>Dodaj Produkt</h2>
+<form method="post">
+    {% csrf_token %}
+    <label for="name">Nazwa:</label>
+    <input type="text" id="name" name="name"><br>
+    <label for="volume">Objętość:</label>
+    <input type="number" id="volume" name="volume"><br>
+    <label for="priority">Priorytet:</label>
+    <select id="priority" name="priority">
+        <option value="1">1 - tańsza dostawa</option>
+        <option value="2">2</option>
+        <option value="3">3 - szybsza dostawa</option>
+    </select><br>
+    <label for="current_hub">Aktualny Hub:</label>
+    <select id="current_hub" name="current_hub">
+        {% for hub in hubs %}
+        <option value="{{ hub.id }}">{{ hub.name }}</option>
+        {% endfor %}
+    </select><br>
+    <label for="destination_hub">Docelowy Hub:</label>
+    <select id="destination_hub" name="destination_hub">
+        {% for hub in hubs %}
+        <option value="{{ hub.id }}">{{ hub.name }}</option>
+        {% endfor %}
+    </select><br>
+    <label for="start_time">Czas początkowy:</label>
+    <input type="datetime-local" id="start_time" name="start_time"><br>
+    <button type="submit">Dodaj Produkt</button>
+</form>
+{% endblock %}

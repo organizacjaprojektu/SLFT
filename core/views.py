@@ -11,7 +11,7 @@ from .models import Truck
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
-#from core.sample_data import create_sample_data
+from core.sample_data import create_sample_data
 import uuid
 from datetime import timedelta, datetime
 
@@ -21,13 +21,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from core.models import Order, Hub, ProductRoute, Truck
 from geopy.distance import geodesic
 import json
-"""
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
+
+
 def sample_data(request):
     create_sample_data()
     return JsonResponse({'status': 'ok'})
-"""
+
 def home(request):
     return render(request, 'home.html')
 
@@ -399,3 +398,7 @@ def add_truck(request):
 def truck_list(request):
     trucks = Truck.objects.all()
     return render(request, 'truck_list.html', {'trucks': trucks})
+
+def hub_list(request):
+    hubs = Hub.objects.all()
+    return render(request, 'hub_list.html', {'hubs': hubs})

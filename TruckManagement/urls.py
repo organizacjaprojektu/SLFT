@@ -23,10 +23,10 @@ from core.views import manage_hub_lorries, add_lorry_to_hub, remove_lorry_from_h
 urlpatterns = [
         #path('admin/', admin.site.urls),
     path('login/', views.CustomLoginView.as_view(), name='login'),
-    path('sample_data', views.sample_data),
+    # path('sample_data', views.sample_data),
     #    path('admin/', admin.site.urls),
     # path('login/', views.CustomLoginView.as_view(), name='login'),
-    # path('sample_data', views.sample_data),
+    path('sample_data', views.sample_data),
 
     path('home/', views.home, name='home'),
     path("products/", product_list, name="product_list"),
@@ -39,4 +39,6 @@ urlpatterns = [
     path('add_lorry/', add_lorry, name='add_lorry'),
     path('add-truck/', views.add_truck, name='add_truck'),
     path('trucks/', views.truck_list, name='truck_list'),
+    path("hubs/", views.hub_list, name="hub_list"),
+
 ]

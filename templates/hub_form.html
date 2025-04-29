@@ -1,25 +1,15 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dodaj Hub</title>
-</head>
-<body>
-    <h2>Dodaj Hub</h2>
-    <form method="post">
-        {% csrf_token %}
-        <label for="name">Nazwa:</label>
-        <input type="text" id="name" name="name" required><br><br>
-
-        <label for="location_latitude">Szerokość geograficzna:</label>
-        <input type="text" id="location_latitude" name="location_latitude" required><br><br>
-
-        <label for="location_longitude">Długość geograficzna:</label>
-        <input type="text" id="location_longitude" name="location_longitude" required><br><br>
-
-        <button type="submit">Dodaj Hub</button>
-    </form>
-    <a href="/products">Powrót do listy produktów</a>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Dodaj Hub{% endblock %}
+{% block content %}
+<h2>Dodaj Hub</h2>
+<form method="post">
+    {% csrf_token %}
+    <label for="name">Nazwa:</label>
+    <input type="text" id="name" name="name"><br>
+    <label for="location_latitude">Szerokość geograficzna:</label>
+    <input type="text" id="location_latitude" name="location_latitude"><br>
+    <label for="location_longitude">Długość geograficzna:</label>
+    <input type="text" id="location_longitude" name="location_longitude"><br>
+    <button type="submit">Dodaj Hub</button>
+</form>
+{% endblock %}

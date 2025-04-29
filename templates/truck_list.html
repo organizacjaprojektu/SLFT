@@ -1,15 +1,110 @@
-{% extends "base.html" %}
-
+{% extends 'base.html' %}
 {% block title %}Lista Ciężarówek{% endblock %}
-
+{% block extra_head %}
+  <style>
+    .container {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+    .truck-card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .truck-card-header {
+      background-color: #212529; /* Black theme, matching generate_routes.html */
+      color: white;
+      font-weight: bold;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+    }
+    .truck-card-header i {
+      margin-right: 0.5rem;
+    }
+    .table-responsive {
+      border-radius: 0 0 10px 10px;
+      overflow: auto;
+    }
+    .table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: collapse;
+    }
+    .table th,
+    .table td {
+      border: 1px solid black; /* Black borders for all cells */
+      padding: 0.75rem;
+      text-align: center;
+      vertical-align: middle;
+      background-color: #fff;
+    }
+    .table th {
+      background-color: #e9ecef;
+    }
+    .table-hover tbody tr:hover td {
+      background-color: #f1f3f5;
+      transition: background-color 0.2s;
+    }
+    .availability-yes {
+      color: #28a745;
+      font-weight: bold;
+    }
+    .availability-no {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .no-trucks {
+      color: #6c757d;
+      font-style: italic;
+      text-align: center;
+      padding: 1.5rem;
+      border: none;
+    }
+  </style>
+{% endblock %}
 {% block content %}
-  <h2>Lista ciężarówek</h2>
-  <ul>
-    {% for truck in trucks %}
-      <li>{{ truck.model }} - {{ truck.license_plate }} ({{ truck.capacity }} t)</li>
-    {% empty %}
-      <li>Brak dostępnych ciężarówek.</li>
-    {% endfor %}
-  </ul>
-  <a href="{% url 'add_truck' %}">Dodaj nową ciężarówkę</a>
+  <div class="container">
+    <div class="truck-card card">
+      <div class="truck-card-header">
+        <i class="fas fa-truck"></i> Lista Ciężarówek
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col" style="border: 1px solid black">ID</th>
+                <th scope="col" style="border: 1px solid black">Rejestracja</th>
+                <th scope="col" style="border: 1px solid black">Marka</th>
+                <th scope="col" style="border: 1px solid black">Model</th>
+                <th scope="col" style="border: 1px solid black">Pojemność (tony)</th>
+                <th scope="col" style="border: 1px solid black">Dostępność</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for truck in trucks %}
+                <tr>
+                  <td style="border: 1px solid black">{{ truck.id }}</td>
+                  <td style="border: 1px solid black">{{ truck.registration_number }}</td>
+                  <td style="border: 1px solid black">{{ truck.brand }}</td>
+                  <td style="border: 1px solid black">{{ truck.model }}</td>
+                  <td style="border: 1px solid black">{{ truck.capacity }}</td>
+                  <td class="{% if truck.is_available %}availability-yes{% else %}availability-no{% endif %}" style="border: 1px solid black">
+                    {{ truck.is_available|yesno:"Tak,Nie" }}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="no-trucks">Brak ciężarówek w systemie.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

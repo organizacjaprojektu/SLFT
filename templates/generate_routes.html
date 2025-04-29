@@ -1,22 +1,114 @@
-<!-- generate_routes.html -->
-
+{% extends 'base.html' %}
+{% block title %}Generuj Trasy{% endblock %}
+{% block extra_head %}
+  <style>
+    .container {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+    .btn-generate {
+      font-weight: bold;
+      padding: 0.75rem 2rem; /* Increased horizontal padding for pill shape */
+      background-color: #000000; /* Solid black background */
+      color: white; /* White text */
+      border: 2px solid #000000; /* Black border */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
+    }
+    .btn-generate:hover {
+      transform: scale(1.05);
+      background-color: #1c2526; /* Slightly lighter black/gray on hover */
+      border-color: #1c2526;
+      color: white; /* Keep white text */
+    }
+    .btn-generate i {
+      margin-right: 0.5rem;
+    }
+    .route-card {
+      transition: box-shadow 0.3s;
+      margin-bottom: 1.5rem;
+      border: none;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .route-card:hover {
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .route-card-header {
+      background-color: #212529; /* Dark gray/black, matching bg-dark */
+      color: white;
+      font-weight: bold;
+      padding: 0.75rem 1.25rem;
+    }
+    .route-details {
+      padding: 1.25rem;
+    }
+    .route-details p {
+      margin-bottom: 0.5rem;
+    }
+    .map-link i {
+      margin-right: 0.5rem;
+      color: #28a745; /* Keep green for contrast */
+    }
+    .map-link:hover {
+      text-decoration: underline;
+    }
+    .no-routes {
+      color: #6c757d; /* Keep gray */
+      font-style: italic;
+    }
+  </style>
+{% endblock %}
 {% block content %}
-  <h1>Generowanie nowych tras</h1>
-  <form method="post" action="{% url 'generate_routes' %}">
-    {% csrf_token %}
-    <button type="submit">Generuj nowe trasy</button>
-  </form>
+  <div class="container">
+    <h1 class="mb-4 text-center">Generowanie Nowych Tras</h1>
+    <form method="post" action="{% url 'generate_routes' %}" class="text-center mb-5">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-dark btn-lg btn-generate rounded-pill">
+        <i class="fas fa-route"></i> Generuj Nowe Trasy
+      </button>
+    </form>
 
-  {% if routes %}
-    <h2>Wygenerowane trasy:</h2>
-    <ul>
-      {% for route in routes %}
-        <li>
-          <strong>Zamówienia:</strong> {{ route.order_ids }} <br>
-          <strong>Trasa:</strong> {{ route.common_segment }} <br>
-          <strong>Łączny wolumen:</strong> {{ route.total_volume }}
-        </li>
-      {% endfor %}
-    </ul>
-  {% endif %}
+    {% if routes %}
+      <h2 class="mb-4">Wygenerowane Trasy</h2>
+      <div class="row">
+        {% for route in routes %}
+          <div class="col-md-6 col-lg-4">
+            <div class="route-card card">
+              <div class="route-card-header">
+                Trasa dla zamówień: {{ route.order_ids|join:", " }}
+              </div>
+              <div class="route-details card-body">
+                <p><strong>Trasa:</strong>
+                  {% for hub in route.common_segment %}
+                    {{ hub.name }}{% if not forloop.last %} → {% endif %}
+                  {% endfor %}
+                </p>
+                <p><strong>Łączny wolumen:</strong> {{ route.total_volume }} m³</p>
+                <p><strong>Link do mapy:</strong>
+                  {% with hubs=route.common_segment %}
+                    {% if hubs %}
+                      {% with origin=hubs.0 %}
+                        {% with destination=hubs|last %}
+                          {% with waypoints=hubs|slice:"1:-1" %}
+                            <a href="https://www.google.com/maps/dir/?api=1&origin={{ origin.location_latitude }},{{ origin.location_longitude }}&destination={{ destination.location_latitude }},{{ destination.location_longitude }}{% if waypoints %}&waypoints={% for wp in waypoints %}{{ wp.location_latitude }},{{ wp.location_longitude }}{% if not forloop.last %}|{% endif %}{% endfor %}{% endif %}&travelmode=driving" target="_blank" class="map-link">
+                              <i class="fas fa-map-marked-alt"></i>Pokaż na Google Maps
+                            </a>
+                          {% endwith %}
+                        {% endwith %}
+                      {% endwith %}
+                    {% else %}
+                      <span class="no-routes">Brak hubów w trasie</span>
+                    {% endif %}
+                  {% endwith %}
+                </p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="no-routes text-center">Brak wygenerowanych tras. Kliknij przycisk powyżej, aby rozpocząć.</p>
+    {% endif %}
+  </div>
 {% endblock %}
