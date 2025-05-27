@@ -1,13 +1,11 @@
-{% extends "base.html" %}
-
+<!-- templates/add_truck.html -->
+{% extends 'base.html' %}
 {% block title %}Dodaj Ciężarówkę{% endblock %}
-
 {% block content %}
-  <h2>Dodaj ciężarówkę</h2>
-  <form method="post">
+<h2>Dodaj Ciężarówkę</h2>
+<form method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit">Dodaj</button>
-  </form>
-  <a href="{% url 'truck_list' %}">Powrót</a>
+</form>
 {% endblock %}
