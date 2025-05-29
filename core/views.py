@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.contrib.auth.views import LoginView
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -6,6 +8,20 @@ from django.shortcuts import render
 from django.shortcuts import render, redirect
 from .forms import TruckForm
 from .models import Truck
+from dotenv import load_dotenv
+import os
+import openrouteservice
+from datetime import timedelta
+
+
+
+env_path = Path(__file__).resolve().parent.parent / 'openroute.env'
+load_dotenv(dotenv_path=env_path)
+api_key = os.getenv("ORS_API_KEY")
+
+if not api_key:
+    raise ValueError("ORS_API_KEY not loaded from openroute.env.")
+
 
 # Create your views here.
 from rest_framework.decorators import api_view, permission_classes
@@ -216,11 +232,31 @@ def combine_orders(orders, truck_capacity):
     return combined_groups
 
 
-def get_travel_time(coord1, coord2):
-    # temp
-    distance_km = geodesic(coord1, coord2).km
-    average_speed_kmh = 70
-    return timedelta(hours=distance_km / average_speed_kmh)
+
+
+
+def get_travel_time(coord1, coord2, api_key):
+
+    client = openrouteservice.Client(key=api_key)
+
+
+    try:
+        route = client.directions(
+            coordinates=[coord1, coord2],
+            profile='driving-hgv',
+            format='json',
+            radiuses=[8000, 8000],
+            validate=True,
+            extra_params={'options': {'vehicle_type': 'truck'}},
+        )
+
+        duration_sec = route['routes'][0]['summary']['duration']
+        return timedelta(seconds=duration_sec)
+
+    except Exception as e:
+        print("Error fetching route:", e)
+        return None
+
 
 # dodać czas przeładowania
 def find_valid_routes(start_hub, destination_hub, deadline, start_time, visited=None, arrival_time=None):
@@ -258,19 +294,27 @@ def find_valid_routes(start_hub, destination_hub, deadline, start_time, visited=
             continue
 
         travel_time0 = get_travel_time(
-            (start_hub.location_latitude, start_hub.location_longitude),
-            (destination_hub.location_latitude, destination_hub.location_longitude)
+            (start_hub.location_longitude, start_hub.location_latitude),
+            (destination_hub.location_longitude, destination_hub.location_latitude),
+            api_key
         )
+
 
         travel_time1 = get_travel_time(
-            (start_hub.location_latitude, start_hub.location_longitude),
-            (next_hub.location_latitude, next_hub.location_longitude)
+            (start_hub.location_longitude, start_hub.location_latitude),
+            (next_hub.location_longitude, next_hub.location_latitude),
+            api_key
         )
 
-        travel_time2 = get_travel_time(
-            (next_hub.location_latitude, next_hub.location_longitude),
-            (destination_hub.location_latitude, destination_hub.location_longitude)
-        )
+        if next_hub.location_longitude != destination_hub.location_longitude:
+            travel_time2 = get_travel_time(
+                (next_hub.location_longitude, next_hub.location_latitude),
+                (destination_hub.location_longitude, destination_hub.location_latitude),
+                api_key
+            )
+        else:
+            travel_time2 = timedelta(seconds=0)
+
 
 
         new_deadline = deadline - travel_time1
@@ -287,9 +331,9 @@ def addHub(name, location_latitude, location_longitude):
 
 def addProduct(order_number, name, volume, priority, current_hub, destination_hub, start_time):
     travel_time = get_travel_time(
-        (current_hub.location_latitude, current_hub.location_longitude),
-        (destination_hub.location_latitude, destination_hub.location_longitude)
-
+        (current_hub.location_longitude, current_hub.location_latitude),
+        (destination_hub.location_longitude, destination_hub.location_latitude),
+        api_key
     )
     start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M")
 
