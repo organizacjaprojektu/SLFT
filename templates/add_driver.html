@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Dodaj Kierowcę{% endblock %}
+{% block content %}
+<h2>Dodaj Kierowcę</h2>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="id_username">Nazwa użytkownika:</label>
+        <input type="text" id="id_username" name="username" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="id_password">Hasło:</label>
+        <input type="password" id="id_password" name="password" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="id_first_name">Imię:</label>
+        <input type="text" id="id_first_name" name="first_name" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="id_last_name">Nazwisko:</label>
+        <input type="text" id="id_last_name" name="last_name" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="id_license_number">Numer licencji:</label>
+        <input type="text" id="id_license_number" name="license_number" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="id_phone_number">Numer telefonu:</label>
+        <input type="text" id="id_phone_number" name="phone_number" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="id_is_available">Dostępność:</label>
+        <input type="checkbox" id="id_is_available" name="is_available" checked>
+    </div>
+    <button type="submit" class="btn btn-primary">Dodaj Kierowcę</button>
+</form>
+{% endblock %}

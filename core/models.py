@@ -43,30 +43,32 @@ class Cargo(models.Model):
 
 
 class Order(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Oczekujące'),
+        ('in_transit', 'W dostawie'),
+        ('delivered', 'Dostarczone'),
+        ('cancelled', 'Anulowane'),
+    ]
+
     order_number = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True, null=True)
     pickup_address = models.CharField(max_length=255)
     delivery_address = models.CharField(max_length=255)
-    status = models.CharField(max_length=50, default='Pending')  # Status zamówienia
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending')  # Status zamówienia
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     truck = models.ForeignKey(Truck, on_delete=models.SET_NULL, null=True, blank=True)
     driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True, blank=True)
     dispatcher = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='dispatched_orders')
-    cargo = models.ForeignKey(Cargo, on_delete=models.SET_NULL, null=True, blank=True)  # Powiązanie z ładunkiem
+    cargo = models.ForeignKey(Cargo, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=100)
     volume = models.IntegerField()
     priority = models.IntegerField()  # 3 - faster delivery, 1 - cheaper delivery
     deadline = models.DateTimeField()
-    current_hub = models.ForeignKey(
-        'Hub', on_delete=models.CASCADE, related_name='products_at_current_hub'
-    )
+    current_hub = models.ForeignKey('Hub', on_delete=models.CASCADE, related_name='products_at_current_hub')
     will_arrive_current_hub_at = models.DateTimeField()
-    destination_hub = models.ForeignKey(
-        'Hub', on_delete=models.CASCADE, related_name='products_at_destination_hub'
-    )
+    destination_hub = models.ForeignKey('Hub', on_delete=models.CASCADE, related_name='products_at_destination_hub')
     all_combinations = models.JSONField()
-
     def __str__(self):
         return self.name
 

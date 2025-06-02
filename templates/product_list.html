@@ -14,7 +14,7 @@
       overflow: hidden;
     }
     .product-card-header {
-      background-color: #212529; /* Black theme, matching generate_routes.html */
+      background-color: #212529;
       color: white;
       font-weight: bold;
       padding: 1rem;
@@ -35,7 +35,7 @@
     }
     .table th,
     .table td {
-      border: 1px solid black; /* Black borders for all cells */
+      border: 1px solid black;
       padding: 0.75rem;
       text-align: center;
       vertical-align: middle;
@@ -56,6 +56,74 @@
       border: none;
     }
   </style>
+  <script>
+    function updateOrderStatus(orderId) {
+      const statusSelect = document.getElementById(`status-${orderId}`);
+      const newStatus = statusSelect.value;
+
+      fetch(`/update_order_status/${orderId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `status=${newStatus}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+        } else {
+          alert(data.error);
+          statusSelect.value = statusSelect.dataset.originalStatus;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas aktualizacji statusu.');
+        statusSelect.value = statusSelect.dataset.originalStatus;
+      });
+    }
+
+    function deleteOrder(orderId) {
+      if (confirm("Czy na pewno chcesz usunąć ten produkt?")) {
+        fetch(`/delete_order/${orderId}/`, {
+          method: 'DELETE',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+            location.reload();
+          } else {
+            alert(data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Wystąpił błąd podczas usuwania produktu.');
+        });
+      }
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  </script>
 {% endblock %}
 {% block content %}
   <div class="container">
@@ -75,6 +143,8 @@
                 <th scope="col" style="border: 1px solid black">Obecny Hub</th>
                 <th scope="col" style="border: 1px solid black">Docelowy Hub</th>
                 <th scope="col" style="border: 1px solid black">Deadline</th>
+                <th scope="col" style="border: 1px solid black">Status</th>
+                <th scope="col" style="border: 1px solid black">Akcje</th>
               </tr>
             </thead>
             <tbody>
@@ -87,10 +157,20 @@
                   <td style="border: 1px solid black">{{ product.current_hub.name }}</td>
                   <td style="border: 1px solid black">{{ product.destination_hub.name }}</td>
                   <td style="border: 1px solid black">{{ product.deadline }}</td>
+                  <td style="border: 1px solid black">
+                    <select id="status-{{ product.id }}" data-original-status="{{ product.status }}" onchange="updateOrderStatus({{ product.id }})">
+                      {% for status_value, status_label in product.STATUS_CHOICES %}
+                        <option value="{{ status_value }}" {% if product.status == status_value %}selected{% endif %}>{{ status_label }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td style="border: 1px solid black">
+                    <button onclick="deleteOrder({{ product.id }})" class="btn btn-danger btn-sm">Usuń</button>
+                  </td>
                 </tr>
               {% empty %}
                 <tr>
-                  <td colspan="7" class="no-products">Brak produktów w systemie.</td>
+                  <td colspan="9" class="no-products">Brak produktów w systemie.</td>
                 </tr>
               {% endfor %}
             </tbody>
