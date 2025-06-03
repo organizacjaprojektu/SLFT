@@ -15,6 +15,9 @@ import openrouteservice
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import logout
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 
 
 env_path = Path(__file__).resolve().parent.parent / 'openroute.env'
@@ -407,6 +410,35 @@ def hub_form(request):
 def product_list(request):
     products = Order.objects.all()
     return render(request, "product_list.html", {"products": products})
+
+
+
+def generate_report(request, order_id):
+    order = Order.objects.get(id=order_id)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="raport_{order.id}.pdf"'
+
+    p = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(100, height - 50, f"Raport Zamówienia #{order.id}")
+
+    p.setFont("Helvetica", 12)
+    p.drawString(100, height - 100, f"Nazwa: {order.name}")
+    p.drawString(100, height - 120, f"Objetosc: {order.volume}")
+    p.drawString(100, height - 140, f"Priorytet: {order.priority}")
+    p.drawString(100, height - 160, f"Obecny Hub: {order.current_hub.name}")
+    p.drawString(100, height - 180, f"Docelowy Hub: {order.destination_hub.name}")
+    p.drawString(100, height - 200, f"Deadline: {order.deadline}")
+    p.drawString(100, height - 220, f"Status: Dostarczone")
+
+    p.showPage()
+    p.save()
+    
+    return response
+
 
 
 def manage_hub_lorries(request, hub_id):

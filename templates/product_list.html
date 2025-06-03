@@ -165,6 +165,9 @@
                     </select>
                   </td>
                   <td style="border: 1px solid black">
+                    {% if product.status == "delivered" %}
+                      <a href="{% url 'generate_report' product.id %}" class="btn btn-success btn-sm">Generuj raport</a>
+                    {% endif %}
                     <button onclick="deleteOrder({{ product.id }})" class="btn btn-danger btn-sm">Usuń</button>
                   </td>
                 </tr>
