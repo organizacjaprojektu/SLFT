@@ -412,6 +412,13 @@ def product_list(request):
     return render(request, "product_list.html", {"products": products})
 
 
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors
+from .models import Order
+import datetime
 
 def generate_report(request, order_id):
     order = Order.objects.get(id=order_id)
@@ -422,21 +429,45 @@ def generate_report(request, order_id):
     p = canvas.Canvas(response, pagesize=A4)
     width, height = A4
 
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(100, height - 50, f"Raport Zamówienia #{order.id}")
+    # Nagłówek
+    p.setFont("Helvetica-Bold", 20)
+    p.drawString(220, height - 50, "Raport Zamówienia")
+    p.line(100, height - 60, 500, height - 60)  # Pozioma linia pod nagłówkiem
 
-    p.setFont("Helvetica", 12)
-    p.drawString(100, height - 100, f"Nazwa: {order.name}")
-    p.drawString(100, height - 120, f"Objetosc: {order.volume}")
-    p.drawString(100, height - 140, f"Priorytet: {order.priority}")
-    p.drawString(100, height - 160, f"Obecny Hub: {order.current_hub.name}")
-    p.drawString(100, height - 180, f"Docelowy Hub: {order.destination_hub.name}")
-    p.drawString(100, height - 200, f"Deadline: {order.deadline}")
-    p.drawString(100, height - 220, f"Status: Dostarczone")
+    # Tabela z informacjami o zamówieniu
+    data = [
+        ["ID Zamówienia", order.id],
+        ["Nazwa produktu", order.name],
+        ["Objętość", f"{order.volume} m³"],
+        ["Priorytet", order.priority],
+        ["Obecny Hub", order.current_hub.name],
+        ["Docelowy Hub", order.destination_hub.name],
+        ["Deadline", order.deadline],
+        ["Status", "Dostarczone"]
+    ]
+
+    table = Table(data, colWidths=[200, 250])
+
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Nagłówek tabeli na szaro
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),  # Tło dla reszty wierszy
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)  # Obramowanie
+    ]))
+
+    table.wrapOn(p, 100, height - 250)
+    table.drawOn(p, 100, height - 250)
+
+    # Stopka z datą wygenerowania raportu
+    p.setFont("Helvetica-Oblique", 10)
+    p.drawString(100, 50, f"Data wygenerowania raportu: {datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')}")
 
     p.showPage()
     p.save()
-    
+
     return response
 
 
