@@ -4,8 +4,26 @@ from django.shortcuts import render
 #from rest_framework.decorators import api_view, permission_classes
 #from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import render, redirect
-from .forms import TruckForm
-from .models import Truck
+from .forms import TruckForm, DriverForm
+from .models import Truck, Driver
+from dotenv import load_dotenv
+import os
+import openrouteservice
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth import logout
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+
+
+env_path = Path(__file__).resolve().parent.parent / 'openroute.env'
+load_dotenv(dotenv_path=env_path)
+api_key = os.getenv("ORS_API_KEY")
+
+if not api_key:
+    raise ValueError("ORS_API_KEY not loaded from openroute.env.")
+
 
 # Create your views here.
 from rest_framework.decorators import api_view, permission_classes
@@ -337,7 +355,32 @@ def hub_form(request):
 def product_list(request):
     products = Order.objects.all()
     return render(request, "product_list.html", {"products": products})
+    
+def generate_report(request, order_id):
+    product = Order.objects.get(id=order_id)
 
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="raport_{product.id}.pdf"'
+
+    p = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(100, height - 50, f"Raport Zamówienia #{product.id}")
+
+    p.setFont("Helvetica", 12)
+    p.drawString(100, height - 100, f"Nazwa: {product.name}")
+    p.drawString(100, height - 120, f"Objetosc: {product.volume}")
+    p.drawString(100, height - 140, f"Priorytet: {product.priority}")
+    p.drawString(100, height - 160, f"Obecny Hub: {product.current_hub.name}")
+    p.drawString(100, height - 180, f"Docelowy Hub: {product.destination_hub.name}")
+    p.drawString(100, height - 200, f"Deadline: {product.deadline}")
+    p.drawString(100, height - 220, f"Status: Dostarczone")
+
+    p.showPage()
+    p.save()
+    
+    return response
 
 def manage_hub_lorries(request, hub_id):
     hub = get_object_or_404(Hub, id=hub_id)

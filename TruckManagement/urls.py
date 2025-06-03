@@ -17,7 +17,7 @@ Including another URLconf
 # from django.contrib import admin
 from django.urls import path
 import core.views as views
-from core.views import product_form, hub_form, product_list, generate_routes_view
+from core.views import product_form, hub_form, product_list, generate_routes_view, logout_view, generate_report
 from core.views import manage_hub_lorries, add_lorry_to_hub, remove_lorry_from_hub, add_lorry
 
 urlpatterns = [
@@ -39,4 +39,13 @@ urlpatterns = [
     path('add_lorry/', add_lorry, name='add_lorry'),
     path('add-truck/', views.add_truck, name='add_truck'),
     path('trucks/', views.truck_list, name='truck_list'),
+    path("hubs/", views.hub_list, name="hub_list"),
+    path('update_order_status/<int:order_id>/', views.update_order_status, name='update_order_status'),
+    path('generate_report/<int:order_id>/', generate_report, name='generate_report'),
+    path('delete_order/<int:order_id>/', views.delete_order, name='delete_order'),
+    path('drivers/', views.driver_list, name='driver_list'),
+    path('add_driver/', views.add_driver, name='add_driver'),
+    path('drivers/<int:driver_id>/manage-trucks/', views.manage_driver_trucks, name='manage_driver_trucks'),
+    path('manage_trucks/', views.manage_trucks, name='manage_trucks'),
+
 ]

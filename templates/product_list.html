@@ -1,40 +1,185 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista Produktów</title>
-</head>
-<body>
-    <h2>Lista Produktów</h2>
-    <table border="1">
-        <tr>
-            <th>Nazwa</th>
-            <th>Objętość</th>
-            <th>Priorytet</th>
-            <th>Obecny Hub</th>
-            <th>Docelowy Hub</th>
-            <th>Deadline</th>
-            <th>Kombinacje tras</th>
-        </tr>
-        {% for product in products %}
-        <tr>
-            <td>{{ product.name }}</td>
-            <td>{{ product.volume }}</td>
-            <td>{{ product.priority }}</td>
-            <td>{{ product.current_hub.name }}</td>
-            <td>{{ product.destination_hub.name }}</td>
-            <td>{{ product.deadline }}</td>
-            <td>
-                {% for route in product.get_combinations %}
-                    {{ route }}<br>
-                {% endfor %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <br>
-    <a href="/add_product">Dodaj Produkt</a> |
-    <a href="/add_hub">Dodaj Hub</a>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Lista Produktów{% endblock %}
+{% block extra_head %}
+  <style>
+    .container {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+    .product-card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .product-card-header {
+      background-color: #212529;
+      color: white;
+      font-weight: bold;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+    }
+    .product-card-header i {
+      margin-right: 0.5rem;
+    }
+    .table-responsive {
+      border-radius: 0 0 10px 10px;
+      overflow: auto;
+    }
+    .table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: collapse;
+    }
+    .table th,
+    .table td {
+      border: 1px solid black;
+      padding: 0.75rem;
+      text-align: center;
+      vertical-align: middle;
+      background-color: #fff;
+    }
+    .table th {
+      background-color: #e9ecef;
+    }
+    .table-hover tbody tr:hover td {
+      background-color: #f1f3f5;
+      transition: background-color 0.2s;
+    }
+    .no-products {
+      color: #6c757d;
+      font-style: italic;
+      text-align: center;
+      padding: 1.5rem;
+      border: none;
+    }
+  </style>
+  <script>
+    function updateOrderStatus(orderId) {
+      const statusSelect = document.getElementById(`status-${orderId}`);
+      const newStatus = statusSelect.value;
+
+      fetch(`/update_order_status/${orderId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `status=${newStatus}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+        } else {
+          alert(data.error);
+          statusSelect.value = statusSelect.dataset.originalStatus;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas aktualizacji statusu.');
+        statusSelect.value = statusSelect.dataset.originalStatus;
+      });
+    }
+
+    function deleteOrder(orderId) {
+      if (confirm("Czy na pewno chcesz usunąć ten produkt?")) {
+        fetch(`/delete_order/${orderId}/`, {
+          method: 'DELETE',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+            location.reload();
+          } else {
+            alert(data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Wystąpił błąd podczas usuwania produktu.');
+        });
+      }
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  </script>
+{% endblock %}
+{% block content %}
+  <div class="container">
+    <div class="product-card card">
+      <div class="product-card-header">
+        <i class="fas fa-box"></i> Lista Produktów
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col" style="border: 1px solid black">ID</th>
+                <th scope="col" style="border: 1px solid black">Nazwa</th>
+                <th scope="col" style="border: 1px solid black">Objętość</th>
+                <th scope="col" style="border: 1px solid black">Priorytet</th>
+                <th scope="col" style="border: 1px solid black">Obecny Hub</th>
+                <th scope="col" style="border: 1px solid black">Docelowy Hub</th>
+                <th scope="col" style="border: 1px solid black">Deadline</th>
+                <th scope="col" style="border: 1px solid black">Status</th>
+                <th scope="col" style="border: 1px solid black">Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for product in products %}
+                <tr>
+                  <td style="border: 1px solid black">{{ product.id }}</td>
+                  <td style="border: 1px solid black">{{ product.name }}</td>
+                  <td style="border: 1px solid black">{{ product.volume }}</td>
+                  <td style="border: 1px solid black">{{ product.priority }}</td>
+                  <td style="border: 1px solid black">{{ product.current_hub.name }}</td>
+                  <td style="border: 1px solid black">{{ product.destination_hub.name }}</td>
+                  <td style="border: 1px solid black">{{ product.deadline }}</td>
+                  <td style="border: 1px solid black">
+                    <select id="status-{{ product.id }}" data-original-status="{{ product.status }}" onchange="updateOrderStatus({{ product.id }})">
+                      {% for status_value, status_label in product.STATUS_CHOICES %}
+                        <option value="{{ status_value }}" {% if product.status == status_value %}selected{% endif %}>{{ status_label }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td style="border: 1px solid black">
+                    {% if product.status == "delivered" %}
+                      <a href="{% url 'generate_report' product.id %}" class="btn btn-success btn-sm">Generuj raport</a>
+                    {% endif %}
+                    <button onclick="deleteOrder({{ product.id }})" class="btn btn-danger btn-sm">Usuń</button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="9" class="no-products">Brak produktów w systemie.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
