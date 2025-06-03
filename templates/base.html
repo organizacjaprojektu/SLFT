@@ -1,10 +1,10 @@
-<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Moja Aplikacja{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -38,10 +38,12 @@
 </head>
 <body>
     <nav>
-        <a href="{% url 'home' %}">Strona Główna</a>
+       <a href="{% url 'home' %}">Strona Główna</a>
         <a href="{% url 'truck_list' %}">Lista Ciężarówek</a>
         <a href="{% url 'add_truck' %}">Dodaj Ciężarówkę</a>
-        <a href="{% url 'add_lorry' %}">Dodaj Lorry</a>
+        <a href="{% url 'manage_trucks' %}">Zarządzaj Ciężarówkami</a>
+        <a href="{% url 'driver_list' %}">Lista Kierowców</a>
+        <a href="{% url 'add_driver' %}">Dodaj Kierowcę</a>
         <a href="{% url 'product_list' %}">Lista Produktów</a>
         <a href="{% url 'add_product' %}">Dodaj Produkt</a>
         <a href="{% url 'hub_list' %}">Lista Hubów</a>

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Zarządzaj Ciężarówkami - {{ driver.user.get_full_name }}{% endblock %}
+{% block content %}
+<h2>Zarządzaj Ciężarówkami dla {{ driver.user.get_full_name }}</h2>
+<h3>Przypisane Ciężarówki</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Rejestracja</th>
+            <th>Marka</th>
+            <th>Akcja</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for truck in assigned_trucks %}
+        <tr>
+            <td>{{ truck.id }}</td>
+            <td>{{ truck.registration_number }}</td>
+            <td>{{ truck.brand }}</td>
+            <td>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="truck_id" value="{{ truck.id }}">
+                    <input type="hidden" name="action" value="unassign">
+                    <button type="submit" class="btn btn-danger btn-sm">Odepnij</button>
+                </form>
+            </td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="4">Brak przypisanych ciężarówek.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<h3>Dostępne Ciężarówki</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Rejestracja</th>
+            <th>Marka</th>
+            <th>Akcja</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for truck in available_trucks %}
+        <tr>
+            <td>{{ truck.id }}</td>
+            <td>{{ truck.registration_number }}</td>
+            <td>{{ truck.brand }}</td>
+            <td>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="truck_id" value="{{ truck.id }}">
+                    <input type="hidden" name="action" value="assign">
+                    <button type="submit" class="btn btn-success btn-sm">Przypisz</button>
+                </form>
+            </td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="4">Brak dostępnych ciężarówek.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

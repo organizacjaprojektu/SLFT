@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Zarządzaj Ciężarówkami{% endblock %}
+{% block extra_head %}
+  <style>
+    .container {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+    .truck-card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .truck-card-header {
+      background-color: #212529;
+      color: white;
+      font-weight: bold;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+    }
+    .truck-card-header i {
+      margin-right: 0.5rem;
+    }
+    .table-responsive {
+      border-radius: 0 0 10px 10px;
+      overflow: auto;
+    }
+    .table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: collapse;
+    }
+    .table th,
+    .table td {
+      border: 1px solid black;
+      padding: 0.75rem;
+      text-align: center;
+      vertical-align: middle;
+      background-color: #fff;
+    }
+    .table th {
+      background-color: #e9ecef;
+    }
+    .table-hover tbody tr:hover td {
+      background-color: #f1f3f5;
+      transition: background-color 0.2s;
+    }
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="container">
+    <div class="truck-card card">
+      <div class="truck-card-header">
+        <i class="fas fa-truck"></i> Zarządzaj Ciężarówkami
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col" style="border: 1px solid black">ID</th>
+                <th scope="col" style="border: 1px solid black">Rejestracja</th>
+                <th scope="col" style="border: 1px solid black">Marka</th>
+                <th scope="col" style="border: 1px solid black">Model</th>
+                <th scope="col" style="border: 1px solid black">Przypisane Huby</th>
+                <th scope="col" style="border: 1px solid black">Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for truck in trucks %}
+                <tr>
+                  <td style="border: 1px solid black">{{ truck.id }}</td>
+                  <td style="border: 1px solid black">{{ truck.registration_number }}</td>
+                  <td style="border: 1px solid black">{{ truck.brand }}</td>
+                  <td style="border: 1px solid black">{{ truck.model }}</td>
+                  <td style="border: 1px solid black">
+                    {% for hub in truck.hub_set.all %}
+                      {{ hub.name }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                      Brak przypisanych hubów
+                    {% endfor %}
+                  </td>
+                  <td style="border: 1px solid black">
+                    <form method="post" style="display: inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="truck_id" value="{{ truck.id }}">
+                      <select name="hub_id">
+                        <option value="">-- Wybierz Hub --</option>
+                        {% for hub in hubs %}
+                          <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                      </select>
+                      <button type="submit" name="action" value="assign" class="btn btn-success btn-sm">Przypisz</button>
+                      <button type="submit" name="action" value="unassign" class="btn btn-danger btn-sm">Odepnij</button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6">Brak ciężarówek w systemie.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

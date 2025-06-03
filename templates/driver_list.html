@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Lista Kierowców{% endblock %}
+{% block extra_head %}
+  <style>
+    .container {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+    .driver-card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .driver-card-header {
+      background-color: #212529;
+      color: white;
+      font-weight: bold;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+    }
+    .driver-card-header i {
+      margin-right: 0.5rem;
+    }
+    .table-responsive {
+      border-radius: 0 0 10px 10px;
+      overflow: auto;
+    }
+    .table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: collapse;
+    }
+    .table th,
+    .table td {
+      border: 1px solid black;
+      padding: 0.75rem;
+      text-align: center;
+      vertical-align: middle;
+      background-color: #fff;
+    }
+    .table th {
+      background-color: #e9ecef;
+    }
+    .table-hover tbody tr:hover td {
+      background-color: #f1f3f5;
+      transition: background-color 0.2s;
+    }
+    .availability-yes {
+      color: #28a745;
+      font-weight: bold;
+    }
+    .availability-no {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .no-drivers {
+      color: #6c757d;
+      font-style: italic;
+      text-align: center;
+      padding: 1.5rem;
+      border: none;
+    }
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="container">
+    <div class="driver-card card">
+      <div class="driver-card-header">
+        <i class="fas fa-user"></i> Lista Kierowców
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col" style="border: 1px solid black">ID</th>
+                <th scope="col" style="border: 1px solid black">Imię i Nazwisko</th>
+                <th scope="col" style="border: 1px solid black">Numer Licencji</th>
+                <th scope="col" style="border: 1px solid black">Telefon</th>
+                <th scope="col" style="border: 1px solid black">Dostępność</th>
+                <th scope="col" style="border: 1px solid black">Zarządzaj</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for driver in drivers %}
+                <tr>
+                  <td style="border: 1px solid black">{{ driver.id }}</td>
+                  <td style="border: 1px solid black">{{ driver.user.get_full_name }}</td>
+                  <td style="border: 1px solid black">{{ driver.license_number }}</td>
+                  <td style="border: 1px solid black">{{ driver.phone_number }}</td>
+                  <td class="{% if driver.is_available %}availability-yes{% else %}availability-no{% endif %}" style="border: 1px solid black">
+                    {{ driver.is_available|yesno:"Tak,Nie" }}
+                  </td>
+                  <td style="border: 1px solid black">
+                    <a href="{% url 'manage_driver_trucks' driver.id %}">Zarządzaj Ciężarówkami</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="no-drivers">Brak kierowców w systemie.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

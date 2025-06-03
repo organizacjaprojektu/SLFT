@@ -1,18 +1,19 @@
 from pathlib import Path
 
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.http import JsonResponse
 from django.shortcuts import render
 #from rest_framework.decorators import api_view, permission_classes
 #from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import render, redirect
-from .forms import TruckForm
-from .models import Truck
+from .forms import TruckForm, DriverForm
+from .models import Truck, Driver
 from dotenv import load_dotenv
 import os
 import openrouteservice
+from django.utils import timezone
 from datetime import timedelta
-
 
 
 env_path = Path(__file__).resolve().parent.parent / 'openroute.env'
@@ -43,6 +44,7 @@ def sample_data(request):
     create_sample_data()
     return JsonResponse({'status': 'ok'})
 
+@login_required
 def home(request):
     return render(request, 'home.html')
 
@@ -52,8 +54,27 @@ class CustomLoginView(LoginView):
 
 
 
+@login_required
+def delete_order(request, order_id):
+    if request.method == 'DELETE':
+        order = get_object_or_404(Order, id=order_id)
+        order.delete()
+        return JsonResponse({'success': True, 'message': 'Produkt usunięty'})
+    return JsonResponse({'success': False, 'error': 'Nieprawidłowe żądanie'}, status=400)
 
+@login_required
+def manage_hub_lorries(request, hub_id):
+    hub = get_object_or_404(Hub, id=hub_id)
+    assigned_lorries = hub.trucks.all()
+    # Wyklucz ciężarówki, które są przypisane do jakiegokolwiek huba
+    assigned_truck_ids = Hub.trucks.through.objects.values_list('truck_id', flat=True)
+    available_lorries = Truck.objects.exclude(id__in=assigned_truck_ids)
 
+    return render(request, 'manage_hub_lorries.html', {
+        'hub': hub,
+        'assigned_lorries': assigned_lorries,
+        'available_lorries': available_lorries
+    })
 
 
 
@@ -446,3 +467,104 @@ def truck_list(request):
 def hub_list(request):
     hubs = Hub.objects.all()
     return render(request, 'hub_list.html', {'hubs': hubs})
+@login_required
+def update_order_status(request, order_id):
+    if request.method == 'POST':
+        order = get_object_or_404(Order, id=order_id)
+        new_status = request.POST.get('status')
+        if new_status in dict(Order.STATUS_CHOICES).keys():
+            order.status = new_status
+            order.save()
+            return JsonResponse({'success': True, 'message': 'Status updated'})
+        return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+@login_required
+def driver_list(request):
+    drivers = Driver.objects.all()
+    return render(request, 'driver_list.html', {'drivers': drivers})
+
+@login_required
+def add_driver(request):
+    if request.method == 'POST':
+        form = DriverForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('driver_list')
+    else:
+        form = DriverForm()
+    return render(request, 'add_driver.html', {'form': form})
+
+@login_required
+def manage_driver_trucks(request, driver_id):
+    driver = get_object_or_404(Driver, id=driver_id)
+    assigned_trucks = Order.objects.filter(driver=driver).values_list('truck', flat=True).distinct()
+    assigned_trucks = Truck.objects.filter(id__in=assigned_trucks)
+
+    assigned_truck_ids = Order.objects.exclude(driver__isnull=True).values_list('truck', flat=True).distinct()
+    available_trucks = Truck.objects.exclude(id__in=assigned_truck_ids)
+
+    if request.method == 'POST':
+        truck_id = request.POST.get('truck_id')
+        action = request.POST.get('action')
+
+        truck = get_object_or_404(Truck, id=truck_id)
+
+        if action == 'assign':
+            order = Order.objects.filter(truck=truck, driver__isnull=True).first()
+            if not order:
+                default_hub = Hub.objects.first()
+                if not default_hub:
+                    return JsonResponse({'success': False, 'error': 'Brak hubów w systemie'}, status=400)
+                order = Order.objects.create(
+                    truck=truck,
+                    driver=driver,
+                    status='pending',
+                    name=f"Zamówienie dla {truck.registration_number}",
+                    volume=1,
+                    priority=1,
+                    deadline=timezone.now() + timedelta(days=7),
+                    current_hub=default_hub,
+                    destination_hub=default_hub,
+                    will_arrive_current_hub_at=timezone.now(),
+                    order_number=str(uuid.uuid4())[:8],
+                    all_combinations=[]
+                )
+            else:
+                order.driver = driver
+                order.save()
+        elif action == 'unassign':
+            # Usuń przypisanie kierowcy z zamówienia
+            Order.objects.filter(driver=driver, truck=truck).update(driver=None)
+
+        return redirect('manage_driver_trucks', driver_id=driver.id)
+
+    return render(request, 'manage_driver_trucks.html', {
+        'driver': driver,
+        'assigned_trucks': assigned_trucks,
+        'available_trucks': available_trucks
+    })
+
+@login_required
+def manage_trucks(request):
+    trucks = Truck.objects.all()
+    hubs = Hub.objects.all()
+
+    if request.method == 'POST':
+        truck_id = request.POST.get('truck_id')
+        hub_id = request.POST.get('hub_id')
+        action = request.POST.get('action')
+
+        truck = get_object_or_404(Truck, id=truck_id)
+        hub = get_object_or_404(Hub, id=hub_id)
+
+        if action == 'assign':
+            hub.trucks.add(truck)
+        elif action == 'unassign':
+            hub.trucks.remove(truck)
+
+        return redirect('manage_trucks')
+
+    return render(request, 'manage_trucks.html', {
+        'trucks': trucks,
+        'hubs': hubs
+    })
