@@ -63,6 +63,18 @@
       padding: 1.5rem;
       border: none;
     }
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 0.5rem;
+    }
+    .delete-btn:hover {
+      background-color: #c82333;
+    }
   </style>
 {% endblock %}
 {% block content %}
@@ -95,7 +107,13 @@
                     {{ driver.is_available|yesno:"Tak,Nie" }}
                   </td>
                   <td style="border: 1px solid black">
-                    <a href="{% url 'manage_driver_trucks' driver.id %}">Zarządzaj Ciężarówkami</a>
+                    <a href="{% url 'manage_driver_trucks' driver.id %}" class="btn btn-primary btn-sm">Zarządzaj Ciężarówkami</a>
+                    <form method="POST" action="{% url 'driver_list' %}" style="display:inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="driver_id" value="{{ driver.id }}">
+                      <input type="hidden" name="action" value="delete">
+                      <button type="submit" class="delete-btn" onclick="return confirm('Czy na pewno chcesz usunąć tego kierowcę?')">Usuń</button>
+                    </form>
                   </td>
                 </tr>
               {% empty %}

@@ -466,10 +466,23 @@ def add_truck(request):
     
     return render(request, 'add_truck.html', {'form': form})
 
+
+@login_required
 def truck_list(request):
     trucks = Truck.objects.all()
-    return render(request, 'truck_list.html', {'trucks': trucks})
 
+    if request.method == 'POST':
+        truck_id = request.POST.get('truck_id')
+        action = request.POST.get('action')
+
+        if action == 'delete':
+            truck = get_object_or_404(Truck, id=truck_id)
+            truck.delete()
+            return JsonResponse({'success': True, 'message': 'Ciężarówka usunięta'})
+
+        return JsonResponse({'success': False, 'error': 'Nieprawidłowe działanie'}, status=400)
+
+    return render(request, 'truck_list.html', {'trucks': trucks})
 def hub_list(request):
     hubs = Hub.objects.all()
     return render(request, 'hub_list.html', {'hubs': hubs})
@@ -488,8 +501,20 @@ def update_order_status(request, order_id):
 @login_required
 def driver_list(request):
     drivers = Driver.objects.all()
-    return render(request, 'driver_list.html', {'drivers': drivers})
 
+    if request.method == 'POST':
+        driver_id = request.POST.get('driver_id')
+        action = request.POST.get('action')
+
+        driver = get_object_or_404(Driver, id=driver_id)
+
+        if action == 'delete':
+            driver.delete()
+            return JsonResponse({'success': True, 'message': 'Kierowca usunięty'})
+
+        return redirect('driver_list')
+
+    return render(request, 'driver_list.html', {'drivers': drivers})
 @login_required
 def add_driver(request):
     if request.method == 'POST':
@@ -540,7 +565,6 @@ def manage_driver_trucks(request, driver_id):
                 order.driver = driver
                 order.save()
         elif action == 'unassign':
-            # Usuń przypisanie kierowcy z zamówienia
             Order.objects.filter(driver=driver, truck=truck).update(driver=None)
 
         return redirect('manage_driver_trucks', driver_id=driver.id)
@@ -562,7 +586,7 @@ def manage_trucks(request):
         action = request.POST.get('action')
 
         truck = get_object_or_404(Truck, id=truck_id)
-        hub = get_object_or_404(Hub, id=hub_id)
+        hub = get_object_or_404(Hub, id=hub_id) if hub_id else None
 
         if action == 'assign':
             hub.trucks.add(truck)
