@@ -17,7 +17,7 @@ Including another URLconf
 # from django.contrib import admin
 from django.urls import path
 import core.views as views
-from core.views import product_form, hub_form, product_list, generate_routes_view
+from core.views import product_form, hub_form, product_list, generate_routes_view, logout_view
 from core.views import manage_hub_lorries, add_lorry_to_hub, remove_lorry_from_hub, add_lorry
 
 urlpatterns = [
@@ -26,6 +26,7 @@ urlpatterns = [
     # path('sample_data', views.sample_data),
     #    path('admin/', admin.site.urls),
     # path('login/', views.CustomLoginView.as_view(), name='login'),
+    path('logout/', logout_view, name='logout'),
     path('sample_data', views.sample_data),
     path('', views.home, name='root'),
     path('home/', views.home, name='home'),

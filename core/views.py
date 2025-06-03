@@ -14,6 +14,7 @@ import os
 import openrouteservice
 from django.utils import timezone
 from datetime import timedelta
+from django.contrib.auth import logout
 
 
 env_path = Path(__file__).resolve().parent.parent / 'openroute.env'
@@ -51,6 +52,11 @@ def home(request):
 
 class CustomLoginView(LoginView):
     template_name = 'login.html'
+
+@login_required
+def logout_view(request):
+    logout(request)
+    return redirect('login')  # Przekierowanie po wylogowaniu
 
 
 
@@ -448,7 +454,7 @@ def add_lorry(request):
     return render(request, 'add_lorry.html')
 
 
-
+@login_required
 def add_truck(request):
     if request.method == 'POST':
         form = TruckForm(request.POST)
@@ -478,6 +484,7 @@ def update_order_status(request, order_id):
             return JsonResponse({'success': True, 'message': 'Status updated'})
         return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
 @login_required
 def driver_list(request):
     drivers = Driver.objects.all()
