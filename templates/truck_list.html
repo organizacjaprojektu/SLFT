@@ -63,17 +63,37 @@
       padding: 1.5rem;
       border: none;
     }
-    .btn-delete {
+    .btn-delete, .btn-set-available, .btn-set-unavailable {
       color: #fff;
-      background-color: #dc3545;
-      border-color: #dc3545;
       padding: 0.25rem 0.5rem;
       font-size: 0.875rem;
       border-radius: 0.2rem;
+      margin: 0 0.2rem;
+    }
+    .btn-delete {
+      background-color: #dc3545;
+      border-color: #dc3545;
     }
     .btn-delete:hover {
       background-color: #c82333;
       border-color: #bd2130;
+    }
+    .btn-set-available {
+      background-color: #28a745;
+      border-color: #28a745;
+    }
+    .btn-set-available:hover {
+      background-color: #218838;
+      border-color: #1e7e34;
+    }
+    .btn-set-unavailable {
+      background-color: #ffc107;
+      border-color: #ffc107;
+      color: #212529;
+    }
+    .btn-set-unavailable:hover {
+      background-color: #e0a800;
+      border-color: #d39e00;
     }
   </style>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -110,6 +130,8 @@
                     {{ truck.is_available|yesno:"Tak,Nie" }}
                   </td>
                   <td style="border: 1px solid black">
+                    <button class="btn btn-set-available" onclick="setAvailability({{ truck.id }}, 'set_available')">Ustaw Dostępna</button>
+                    <button class="btn btn-set-unavailable" onclick="setAvailability({{ truck.id }}, 'set_unavailable')">Ustaw Niedostępna</button>
                     <button class="btn btn-delete" onclick="deleteTruck({{ truck.id }})">Usuń</button>
                   </td>
                 </tr>
@@ -126,6 +148,36 @@
   </div>
 
   <script>
+    function setAvailability(truckId, action) {
+      if (confirm(`Czy na pewno chcesz ustawić ciężarówkę jako ${action === 'set_available' ? 'dostępną' : 'niedostępną'}?`)) {
+        $.ajax({
+          url: '{% url "truck_list" %}',
+          type: 'POST',
+          data: {
+            truck_id: truckId,
+            action: action,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+          },
+          success: function(response) {
+            if (response.success) {
+              alert(response.message);
+              const availabilityCell = $(`#truck-${truckId} td:nth-child(6)`);
+              if (action === 'set_available') {
+                availabilityCell.text('Tak').removeClass('availability-no').addClass('availability-yes');
+              } else {
+                availabilityCell.text('Nie').removeClass('availability-yes').addClass('availability-no');
+              }
+            } else {
+              alert('Błąd: ' + response.error);
+            }
+          },
+          error: function() {
+            alert('Wystąpił błąd podczas zmiany dostępności ciężarówki.');
+          }
+        });
+      }
+    }
+
     function deleteTruck(truckId) {
       if (confirm('Czy na pewno chcesz usunąć tę ciężarówkę?')) {
         $.ajax({
@@ -139,7 +191,7 @@
           success: function(response) {
             if (response.success) {
               alert(response.message);
-              $('#truck-' + truckId).remove();
+              $(`#truck-${truckId}`).remove();
               if ($('tbody tr').length === 0) {
                 $('tbody').append('<tr><td colspan="7" class="no-trucks">Brak ciężarówek w systemie.</td></tr>');
               }

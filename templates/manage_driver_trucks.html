@@ -1,69 +1,126 @@
 {% extends 'base.html' %}
 {% block title %}Zarządzaj Ciężarówkami - {{ driver.user.get_full_name }}{% endblock %}
+{% block extra_head %}
+  <style>
+    .container {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+    .table-responsive {
+      overflow-x: auto;
+    }
+    .table th, .table td {
+      border: 1px solid black;
+      padding: 0.75rem;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .table th {
+      background-color: #e9ecef;
+    }
+    .btn-assign, .btn-unassign {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+    }
+    .no-orders {
+      color: #6c757d;
+      font-style: italic;
+      text-align: center;
+      padding: 1.5rem;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    function handleAction(truckId, action) {
+      if (confirm(`Czy na pewno chcesz ${action === 'assign' ? 'przypisać' : 'odpiąć'} kierowcę?`)) {
+        $.ajax({
+          url: '{% url "manage_driver_trucks" driver.id %}',
+          type: 'POST',
+          data: {
+            truck_id: truckId,
+            action: action,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+          },
+          success: function(response) {
+            alert(response.message);
+            if (response.success) {
+              location.reload();
+            }
+          },
+          error: function() {
+            alert('Wystąpił błąd podczas operacji.');
+          }
+        });
+      }
+    }
+  </script>
+{% endblock %}
 {% block content %}
-<h2>Zarządzaj Ciężarówkami dla {{ driver.user.get_full_name }}</h2>
-<h3>Przypisane Ciężarówki</h3>
-<table class="table table-bordered">
-    <thead>
+<div class="container">
+  <h2>Zarządzaj Ciężarówkami dla {{ driver.user.get_full_name }}</h2>
+
+  <h3>Przypisane Zamówienia</h3>
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead>
         <tr>
-            <th>ID</th>
-            <th>Rejestracja</th>
-            <th>Marka</th>
-            <th>Akcja</th>
+          <th>ID Zamówienia</th>
+          <th>Nazwa Zamówienia</th>
+          <th>Ciężarówka</th>
+          <th>Status</th>
+          <th>Akcja</th>
         </tr>
-    </thead>
-    <tbody>
-    {% for truck in assigned_trucks %}
-        <tr>
-            <td>{{ truck.id }}</td>
-            <td>{{ truck.registration_number }}</td>
-            <td>{{ truck.brand }}</td>
+      </thead>
+      <tbody>
+        {% for order in assigned_orders %}
+          <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.name }}</td>
+            <td>{{ order.truck.registration_number|default:'Brak' }}</td>
+            <td>{{ order.get_status_display }}</td>
             <td>
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="truck_id" value="{{ truck.id }}">
-                    <input type="hidden" name="action" value="unassign">
-                    <button type="submit" class="btn btn-danger btn-sm">Odepnij</button>
-                </form>
+              <button class="btn btn-danger btn-unassign" onclick="handleAction({{ order.truck.id }}, 'unassign')">Odepnij</button>
             </td>
-        </tr>
-    {% empty %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="no-orders">Brak przypisanych zamówień.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Dostępne Zamówienia</h3>
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead>
         <tr>
-            <td colspan="4">Brak przypisanych ciężarówek.</td>
+          <th>ID Zamówienia</th>
+          <th>Nazwa Zamówienia</th>
+          <th>Ciężarówka</th>
+          <th>Status</th>
+          <th>Akcja</th>
         </tr>
-    {% endfor %}
-    </tbody>
-</table>
-<h3>Dostępne Ciężarówki</h3>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Rejestracja</th>
-            <th>Marka</th>
-            <th>Akcja</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for truck in available_trucks %}
-        <tr>
-            <td>{{ truck.id }}</td>
-            <td>{{ truck.registration_number }}</td>
-            <td>{{ truck.brand }}</td>
+      </thead>
+      <tbody>
+        {% for order in available_orders %}
+          <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.name }}</td>
+            <td>{{ order.truck.registration_number|default:'Brak' }}</td>
+            <td>{{ order.get_status_display }}</td>
             <td>
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="truck_id" value="{{ truck.id }}">
-                    <input type="hidden" name="action" value="assign">
-                    <button type="submit" class="btn btn-success btn-sm">Przypisz</button>
-                </form>
+              <button class="btn btn-success btn-assign" onclick="handleAction({{ order.truck.id }}, 'assign')">Przypisz</button>
             </td>
-        </tr>
-    {% empty %}
-        <tr>
-            <td colspan="4">Brak dostępnych ciężarówek.</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="no-orders">Brak dostępnych zamówień.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

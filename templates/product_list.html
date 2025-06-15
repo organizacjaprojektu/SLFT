@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Lista Produktów{% endblock %}
+{% block title %}Lista Zamówień{% endblock %}
 {% block extra_head %}
   <style>
     .container {
@@ -55,38 +55,89 @@
       padding: 1.5rem;
       border: none;
     }
+    .location-input {
+      display: none;
+      width: 100%;
+      padding: 0.25rem;
+      margin-top: 0.25rem;
+    }
+    .location-input.show {
+      display: block;
+    }
   </style>
   <script>
     function updateOrderStatus(orderId) {
       const statusSelect = document.getElementById(`status-${orderId}`);
       const newStatus = statusSelect.value;
+      const locationInput = document.getElementById(`location-${orderId}`);
+      const currentLocation = newStatus === 'in_transit' && locationInput ? locationInput.value : '';
+
+      const formData = new FormData();
+      formData.append('status', newStatus);
+      if (newStatus === 'in_transit') {
+        formData.append('current_location', currentLocation);
+      }
 
       fetch(`/update_order_status/${orderId}/`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
           'X-CSRFToken': getCookie('csrftoken')
         },
-        body: `status=${newStatus}`
+        body: formData
       })
       .then(response => response.json())
       .then(data => {
         if (data.success) {
           alert(data.message);
+          statusSelect.dataset.originalStatus = newStatus;
+          const locationCell = document.getElementById(`location-cell-${orderId}`);
+          locationCell.textContent = newStatus === 'in_transit' ? currentLocation || '-' : '-';
+          toggleLocationInput(orderId);
         } else {
           alert(data.error);
           statusSelect.value = statusSelect.dataset.originalStatus;
+          toggleLocationInput(orderId);
         }
       })
       .catch(error => {
         console.error('Error:', error);
         alert('Wystąpił błąd podczas aktualizacji statusu.');
         statusSelect.value = statusSelect.dataset.originalStatus;
+        toggleLocationInput(orderId);
       });
     }
 
+    function toggleLocationInput(orderId) {
+      const statusSelect = document.getElementById(`status-${orderId}`);
+      const locationInput = document.getElementById(`location-${orderId}`);
+      if (statusSelect.value === 'in_transit') {
+        locationInput.classList.add('show');
+      } else {
+        locationInput.classList.remove('show');
+        locationInput.value = '';
+      }
+    }
+
+    // Inicjalizuj widoczność pól miejscowości i dodaj obsługę klawisza Enter
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('[id^="status-"]').forEach(select => {
+        const orderId = select.id.replace('status-', '');
+        toggleLocationInput(orderId);
+        select.addEventListener('change', () => toggleLocationInput(orderId));
+      });
+      document.querySelectorAll('[id^="location-"]').forEach(input => {
+        const orderId = input.id.replace('location-', '');
+        input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            updateOrderStatus(orderId);
+          }
+        });
+      });
+    });
+
     function deleteOrder(orderId) {
-      if (confirm("Czy na pewno chcesz usunąć ten produkt?")) {
+      if (confirm("Czy na pewno chcesz usunąć to zamówienie?")) {
         fetch(`/delete_order/${orderId}/`, {
           method: 'DELETE',
           headers: {
@@ -104,7 +155,7 @@
         })
         .catch(error => {
           console.error('Error:', error);
-          alert('Wystąpił błąd podczas usuwania produktu.');
+          alert('Wystąpił błąd podczas usuwania zamówienia.');
         });
       }
     }
@@ -129,7 +180,7 @@
   <div class="container">
     <div class="product-card card">
       <div class="product-card-header">
-        <i class="fas fa-box"></i> Lista Produktów
+        <i class="fas fa-box"></i> Lista Zamówień
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
@@ -144,36 +195,39 @@
                 <th scope="col" style="border: 1px solid black">Docelowy Hub</th>
                 <th scope="col" style="border: 1px solid black">Deadline</th>
                 <th scope="col" style="border: 1px solid black">Status</th>
+                <th scope="col" style="border: 1px solid black">Miejscowość</th>
                 <th scope="col" style="border: 1px solid black">Akcje</th>
               </tr>
             </thead>
             <tbody>
-              {% for product in products %}
+              {% for order in products %}
                 <tr>
-                  <td style="border: 1px solid black">{{ product.id }}</td>
-                  <td style="border: 1px solid black">{{ product.name }}</td>
-                  <td style="border: 1px solid black">{{ product.volume }}</td>
-                  <td style="border: 1px solid black">{{ product.priority }}</td>
-                  <td style="border: 1px solid black">{{ product.current_hub.name }}</td>
-                  <td style="border: 1px solid black">{{ product.destination_hub.name }}</td>
-                  <td style="border: 1px solid black">{{ product.deadline }}</td>
+                  <td style="border: 1px solid black">{{ order.id }}</td>
+                  <td style="border: 1px solid black">{{ order.name }}</td>
+                  <td style="border: 1px solid black">{{ order.volume }}</td>
+                  <td style="border: 1px solid black">{{ order.priority }}</td>
+                  <td style="border: 1px solid black">{{ order.current_hub.name }}</td>
+                  <td style="border: 1px solid black">{{ order.destination_hub.name }}</td>
+                  <td style="border: 1px solid black">{{ order.deadline }}</td>
                   <td style="border: 1px solid black">
-                    <select id="status-{{ product.id }}" data-original-status="{{ product.status }}" onchange="updateOrderStatus({{ product.id }})">
-                      {% for status_value, status_label in product.STATUS_CHOICES %}
-                        <option value="{{ status_value }}" {% if product.status == status_value %}selected{% endif %}>{{ status_label }}</option>
+                    <select id="status-{{ order.id }}" data-original-status="{{ order.status }}" onchange="updateOrderStatus({{ order.id }})">
+                      {% for status_value, status_label in order.STATUS_CHOICES %}
+                        <option value="{{ status_value }}" {% if order.status == status_value %}selected{% endif %}>{{ status_label }}</option>
                       {% endfor %}
                     </select>
+                    <input type="text" id="location-{{ order.id }}" class="location-input" value="{{ order.current_location|default_if_none:'' }}" placeholder="Wpisz miejscowość">
                   </td>
+                  <td id="location-cell-{{ order.id }}" style="border: 1px solid black">{{ order.current_location|default:'-' }}</td>
                   <td style="border: 1px solid black">
-                    {% if product.status == "delivered" %}
-                      <a href="{% url 'generate_report' product.id %}" class="btn btn-success btn-sm">Generuj raport</a>
+                    {% if order.status == "delivered" %}
+                      <a href="{% url 'generate_report' order.id %}" class="btn btn-success btn-sm">Generuj raport</a>
                     {% endif %}
-                    <button onclick="deleteOrder({{ product.id }})" class="btn btn-danger btn-sm">Usuń</button>
+                    <button onclick="deleteOrder({{ order.id }})" class="btn btn-danger btn-sm">Usuń</button>
                   </td>
                 </tr>
               {% empty %}
                 <tr>
-                  <td colspan="9" class="no-products">Brak produktów w systemie.</td>
+                  <td colspan="10" class="no-products">Brak zamówień w systemie.</td>
                 </tr>
               {% endfor %}
             </tbody>

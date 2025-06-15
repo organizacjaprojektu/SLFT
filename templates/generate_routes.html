@@ -8,18 +8,18 @@
     }
     .btn-generate {
       font-weight: bold;
-      padding: 0.75rem 2rem; /* Increased horizontal padding for pill shape */
-      background-color: #000000; /* Solid black background */
-      color: white; /* White text */
-      border: 2px solid #000000; /* Black border */
+      padding: 0.75rem 2rem;
+      background-color: #000000;
+      color: white;
+      border: 2px solid #000000;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
       transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
     }
     .btn-generate:hover {
       transform: scale(1.05);
-      background-color: #1c2526; /* Slightly lighter black/gray on hover */
+      background-color: #1c2526;
       border-color: #1c2526;
-      color: white; /* Keep white text */
+      color: white;
     }
     .btn-generate i {
       margin-right: 0.5rem;
@@ -35,7 +35,7 @@
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
     .route-card-header {
-      background-color: #212529; /* Dark gray/black, matching bg-dark */
+      background-color: #212529;
       color: white;
       font-weight: bold;
       padding: 0.75rem 1.25rem;
@@ -48,14 +48,18 @@
     }
     .map-link i {
       margin-right: 0.5rem;
-      color: #28a745; /* Keep green for contrast */
+      color: #28a745;
     }
     .map-link:hover {
       text-decoration: underline;
     }
     .no-routes {
-      color: #6c757d; /* Keep gray */
+      color: #6c757d;
       font-style: italic;
+    }
+    .warning-message {
+      color: #dc3545;
+      font-weight: bold;
     }
   </style>
 {% endblock %}
@@ -85,14 +89,21 @@
                   {% endfor %}
                 </p>
                 <p><strong>Łączny wolumen:</strong> {{ route.total_volume }} m³</p>
+                <p><strong>Ciężarówka:</strong>
+                  {% if route.truck_registration %}
+                    {{ route.truck_registration }}
+                  {% else %}
+                    <span class="warning-message">Brak przypisanej ciężarówki - brak dostępnych ciężarówek w hubie początkowym</span>
+                  {% endif %}
+                </p>
                 <p><strong>Link do mapy:</strong>
                   {% with hubs=route.common_segment %}
                     {% if hubs %}
                       {% with origin=hubs.0 %}
                         {% with destination=hubs|last %}
                           {% with waypoints=hubs|slice:"1:-1" %}
-                            <a href="https://www.google.com/maps/dir/?api=1&origin={{ origin.location_latitude }},{{ origin.location_longitude }}&destination={{ destination.location_latitude }},{{ destination.location_longitude }}{% if waypoints %}&waypoints={% for wp in waypoints %}{{ wp.location_latitude }},{{ wp.location_longitude }}{% if not forloop.last %}|{% endif %}{% endfor %}{% endif %}&travelmode=driving" target="_blank" class="map-link">
-                              <i class="fas fa-map-marked-alt"></i>Pokaż na Google Maps
+                            <a href="https://www.google.com/maps/dir/?api=1&origin={{ origin.location_latitude|default:0 }},{{ origin.location_longitude|default:0 }}&destination={{ destination.location_latitude|default:0 }},{{ destination.location_longitude|default:0 }}{% if waypoints %}&waypoints={% for wp in waypoints %}{{ wp.location_latitude|default:0 }},{{ wp.location_longitude|default:0 }}{% if not forloop.last %}|{% endif %}{% endfor %}{% endif %}&travelmode=driving" target="_blank" class="map-link">
+                              <i class="fas fa-map-marked-alt"></i> Pokaż na Google Maps
                             </a>
                           {% endwith %}
                         {% endwith %}

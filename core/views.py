@@ -187,7 +187,6 @@ def can_combine_on_segment(routeA, routeB, segment_startA, segment_startB, segme
 
 
 def combine_orders(orders, truck_capacity):
-
     combined_groups = []
     used = set()
     n = len(orders)
@@ -220,7 +219,7 @@ def combine_orders(orders, truck_capacity):
                             orderA.volume, orderB.volume, truck_capacity
                         )
                         if ok:
-                            if not best_common_segment or len(common_seg) < len(best_common_segment):
+                            if not best_common_segment or len(common_seg) > len(best_common_segment):
                                 found_segment = common_seg
                             else:
                                 found_segment = best_common_segment
@@ -239,18 +238,40 @@ def combine_orders(orders, truck_capacity):
 
         if len(group) > 1:
             used.add(orderA.id)
+            total_volume = sum(o.volume for o in group)
+
+            # Find an available truck in the join hub
+            join_hub_instance = Hub.objects.get(id=join_hub_id)
+            available_truck = join_hub_instance.trucks.filter(
+                is_available=True, capacity__gte=total_volume
+            ).first()
+
+            if not available_truck:
+                print(f"No available truck found for join hub {join_hub_instance.name} (ID: {join_hub_id}) with capacity >= {total_volume}")
+                # Log all trucks in the hub for debugging
+                all_trucks = join_hub_instance.trucks.all()
+                print(f"All trucks in hub {join_hub_instance.name}: {[{'id': t.id, 'registration': t.registration_number, 'capacity': float(t.capacity), 'available': t.is_available} for t in all_trucks]}")
+            else:
+                # Assign the truck to all orders in the group
+                for order in group:
+                    order.truck = available_truck
+                    order.save()
+                available_truck.is_available = False
+                available_truck.save()
+                print(f"Assigned truck {available_truck.registration_number} to orders {[o.id for o in group]}")
+
             combined_groups.append({
                 "order_ids": [o.id for o in group],
                 "common_segment": best_common_segment,
-                "total_volume": sum(o.volume for o in group)
+                "total_volume": total_volume,
+                "truck": available_truck.id if available_truck else None,
+                "truck_registration": available_truck.registration_number if available_truck else None
             })
 
-            from core.models import Hub, Truck
-
-            join_hub_instance = Hub.objects.get(id=join_hub_id)
+            # Manage truck assignments in hubs
             if any(order.current_hub.id != join_hub_id for order in group):
                 lorry = get_available_lorry(join_hub_instance)
-                if lorry:
+                if lorry and lorry != available_truck:
                     join_hub_instance.trucks.add(lorry)
                     join_hub_instance.save()
 
@@ -258,13 +279,11 @@ def combine_orders(orders, truck_capacity):
             if any(order.destination_hub.id != separation_hub_id for order in group):
                 if separation_hub_instance.trucks.exists():
                     lorry = separation_hub_instance.trucks.first()
-                    separation_hub_instance.trucks.remove(lorry)
-                    separation_hub_instance.save()
+                    if lorry != available_truck:
+                        separation_hub_instance.trucks.remove(lorry)
+                        separation_hub_instance.save()
+
     return combined_groups
-
-
-
-
 
 def get_travel_time(coord1, coord2, api_key):
 
@@ -541,22 +560,46 @@ def add_truck(request):
     return render(request, 'add_truck.html', {'form': form})
 
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from core.models import Truck, Hub
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from core.models import Truck
+
+
 @login_required
 def truck_list(request):
-    trucks = Truck.objects.all()
+    trucks = Truck.objects.all().prefetch_related('hub_set')  # Changed 'hubs' to 'hub_set'
 
     if request.method == 'POST':
         truck_id = request.POST.get('truck_id')
         action = request.POST.get('action')
+        truck = get_object_or_404(Truck, id=truck_id)
 
-        if action == 'delete':
-            truck = get_object_or_404(Truck, id=truck_id)
+        if action == 'set_available':
+            truck.is_available = True
+            truck.save()
+            return JsonResponse(
+                {'success': True, 'message': f'Ciężarówka {truck.registration_number} ustawiona jako dostępna'})
+        elif action == 'set_unavailable':
+            truck.is_available = False
+            truck.save()
+            return JsonResponse(
+                {'success': True, 'message': f'Ciężarówka {truck.registration_number} ustawiona jako niedostępna'})
+        elif action == 'delete':
             truck.delete()
-            return JsonResponse({'success': True, 'message': 'Ciężarówka usunięta'})
+            return JsonResponse(
+                {'success': True, 'message': f'Ciężarówka {truck.registration_number} usunięta'})
 
-        return JsonResponse({'success': False, 'error': 'Nieprawidłowe działanie'}, status=400)
+        return JsonResponse({'success': False, 'error': 'Nieprawidłowa akcja'}, status=400)
 
-    return render(request, 'truck_list.html', {'trucks': trucks})
+    return render(request, 'truck_list.html', {
+        'trucks': trucks,
+    })
 def hub_list(request):
     hubs = Hub.objects.all()
     return render(request, 'hub_list.html', {'hubs': hubs})
@@ -565,13 +608,18 @@ def update_order_status(request, order_id):
     if request.method == 'POST':
         order = get_object_or_404(Order, id=order_id)
         new_status = request.POST.get('status')
+        current_location = request.POST.get('current_location', '')
+
         if new_status in dict(Order.STATUS_CHOICES).keys():
             order.status = new_status
+            if new_status == 'in_transit':
+                order.current_location = current_location
+            else:
+                order.current_location = ''  # Czyść lokalizację dla innych statusów
             order.save()
-            return JsonResponse({'success': True, 'message': 'Status updated'})
-        return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
-    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
-
+            return JsonResponse({'success': True, 'message': 'Status zaktualizowany'})
+        return JsonResponse({'success': False, 'error': 'Nieprawidłowy status'}, status=400)
+    return JsonResponse({'success': False, 'error': 'Nieprawidłowe żądanie'}, status=400)
 @login_required
 def driver_list(request):
     drivers = Driver.objects.all()
@@ -603,11 +651,15 @@ def add_driver(request):
 @login_required
 def manage_driver_trucks(request, driver_id):
     driver = get_object_or_404(Driver, id=driver_id)
-    assigned_trucks = Order.objects.filter(driver=driver).values_list('truck', flat=True).distinct()
-    assigned_trucks = Truck.objects.filter(id__in=assigned_trucks)
+    # Fetch orders assigned to the driver
+    assigned_orders = Order.objects.filter(driver=driver).select_related('truck')
+    # Fetch trucks associated with these orders
+    assigned_trucks = Truck.objects.filter(order__driver=driver).distinct()
 
-    assigned_truck_ids = Order.objects.exclude(driver__isnull=True).values_list('truck', flat=True).distinct()
-    available_trucks = Truck.objects.exclude(id__in=assigned_truck_ids)
+    # Fetch orders with trucks that have no driver assigned
+    available_orders = Order.objects.filter(driver__isnull=True, truck__isnull=False).select_related('truck')
+    # Fetch trucks associated with these available orders
+    available_trucks = Truck.objects.filter(order__driver__isnull=True).distinct()
 
     if request.method == 'POST':
         truck_id = request.POST.get('truck_id')
@@ -616,39 +668,31 @@ def manage_driver_trucks(request, driver_id):
         truck = get_object_or_404(Truck, id=truck_id)
 
         if action == 'assign':
+            # Find an order with the truck that has no driver
             order = Order.objects.filter(truck=truck, driver__isnull=True).first()
-            if not order:
-                default_hub = Hub.objects.first()
-                if not default_hub:
-                    return JsonResponse({'success': False, 'error': 'Brak hubów w systemie'}, status=400)
-                order = Order.objects.create(
-                    truck=truck,
-                    driver=driver,
-                    status='pending',
-                    name=f"Zamówienie dla {truck.registration_number}",
-                    volume=1,
-                    priority=1,
-                    deadline=timezone.now() + timedelta(days=7),
-                    current_hub=default_hub,
-                    destination_hub=default_hub,
-                    will_arrive_current_hub_at=timezone.now(),
-                    order_number=str(uuid.uuid4())[:8],
-                    all_combinations=[]
-                )
-            else:
+            if order:
                 order.driver = driver
                 order.save()
+                return JsonResponse({'success': True, 'message': 'Kierowca przypisany do zamówienia'})
+            else:
+                return JsonResponse({'success': False, 'error': 'Brak dostępnych zamówień dla tej ciężarówki'}, status=400)
         elif action == 'unassign':
-            Order.objects.filter(driver=driver, truck=truck).update(driver=None)
+            # Unassign the driver from orders with this truck
+            orders_updated = Order.objects.filter(driver=driver, truck=truck).update(driver=None)
+            if orders_updated:
+                return JsonResponse({'success': True, 'message': 'Kierowca odpięty od zamówienia'})
+            else:
+                return JsonResponse({'success': False, 'error': 'Brak zamówień do odpięcia'}, status=400)
 
         return redirect('manage_driver_trucks', driver_id=driver.id)
 
     return render(request, 'manage_driver_trucks.html', {
         'driver': driver,
+        'assigned_orders': assigned_orders,
         'assigned_trucks': assigned_trucks,
+        'available_orders': available_orders,
         'available_trucks': available_trucks
     })
-
 @login_required
 def manage_trucks(request):
     trucks = Truck.objects.all()
